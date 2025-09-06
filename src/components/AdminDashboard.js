@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
 import StudentDetails from "./StudentDetails";
 import ProfileSettings from "../dashboard/profilesettings"; // Reusing Student Profile Settings
 import AccountManagement from "../dashboard/accountmanagement"; // Reusing Student Account Management
@@ -11,7 +9,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [activities, setActivities] = useState([]);
 
-  // Fetch student activities (Replace with actual Firestore logic)
+  // Fetch student activities (placeholder)
   useEffect(() => {
     setActivities([
       { id: 1, name: "John Doe", action: "Joined Study Group", date: "23-Mar-2025" },

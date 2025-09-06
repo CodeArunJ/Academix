@@ -20,7 +20,7 @@ const Dashboard = () => {
       
       {/* Header */}
       <div className="bg-gray-900 text-white p-4 flex justify-between items-center shadow-lg">
-        <h2 className="text-2xl font-extrabold text-blue-400">EduTech</h2>
+        <h2 className="text-2xl font-extrabold text-blue-400">Academix</h2>
         <button
           onClick={toggleSidebar}
           className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition duration-300"
@@ -88,7 +88,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
         
         {/* Activity Section */}
-        <div className="bg-gray-800 p-4 rounded-lg shadow-lg h-56 flex flex-col">
+        <div className="bg-gray-800 p-4 rounded-lg shadow-lg min-h-[224px] max-h-[500px] flex flex-col">
           <h2 className="text-lg font-bold mb-2">Recent Activity</h2>
           <div className="text-sm flex-grow overflow-hidden">
             <Activity />
@@ -96,7 +96,7 @@ const Dashboard = () => {
         </div>
 
         {/* Peers Section */}
-        <div className="bg-gray-800 p-4 rounded-lg shadow-lg h-56 flex flex-col">
+        <div className="bg-gray-800 p-4 rounded-lg shadow-lg min-h-[224px] max-h-[500px] flex flex-col">
           <h2 className="text-lg font-bold mb-2">Your Peers</h2>
           <div className="text-sm flex-grow overflow-hidden">
             <Peers />
@@ -104,7 +104,7 @@ const Dashboard = () => {
         </div>
 
         {/* Chat Section (Aligned and Fully Functional) */}
-        <div className="bg-gray-800 p-4 rounded-lg shadow-lg h-56 flex flex-col">
+        <div className="bg-gray-800 p-4 rounded-lg shadow-lg min-h-[320px] max-h-[600px] flex flex-col">
           <h2 className="text-lg font-bold mb-2">Chat</h2>
           <div className="text-sm flex-grow overflow-hidden">
             <Chat />

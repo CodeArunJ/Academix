@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 
 const StudyGroupPage = () => {
   const [formData, setFormData] = useState({
@@ -15,30 +16,7 @@ const StudyGroupPage = () => {
   });
 
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [studyGroups, setStudyGroups] = useState([
-    {
-      id: 1,
-      title: "JavaScript Study Group",
-      description: "Study JavaScript fundamentals and advanced topics together.",
-      prerequisites: "Basic understanding of programming",
-      skills: "JavaScript, Web Development",
-      level: "Beginner",
-      duration: "4 weeks",
-      mode: "Online",
-      contactEmail: "owner1@example.com",
-    },
-    {
-      id: 2,
-      title: "Data Science Bootcamp",
-      description: "Collaborate on projects and learn data science concepts.",
-      prerequisites: "Python, Statistics knowledge",
-      skills: "Python, Machine Learning, Data Analysis",
-      level: "Moderate",
-      duration: "2 months",
-      mode: "Offline",
-      contactEmail: "owner2@example.com",
-    },
-  ]);
+  const [studyGroups, setStudyGroups] = useState([]);
 
   // Handle input changes for form
   const handleChange = (e) => {
@@ -54,32 +32,28 @@ const StudyGroupPage = () => {
       return;
     }
 
-    // Create new study group object
-    const newStudyGroup = {
-      id: studyGroups.length + 1,
-      ...formData,
-    };
-
-    // Update study groups state
-    setStudyGroups([...studyGroups, newStudyGroup]);
-
-    // Show success message
-    toast.success("Study Group posted successfully! 🎉", { position: "top-right" });
-
-    // Reset form
-    setFormData({
-      title: "",
-      description: "",
-      prerequisites: "",
-      skills: "",
-      level: "",
-      duration: "",
-      mode: "",
-      contactEmail: "",
-    });
-
-    setIsFormVisible(false);
+    axios.post("http://localhost:5000/api/study-groups", formData)
+      .then(({ data }) => {
+        setStudyGroups([data, ...studyGroups]);
+        toast.success("Study Group posted successfully! 🎉", { position: "top-right" });
+        setFormData({
+          title: "",
+          description: "",
+          prerequisites: "",
+          skills: "",
+          level: "",
+          duration: "",
+          mode: "",
+          contactEmail: "",
+        });
+        setIsFormVisible(false);
+      })
+      .catch(() => toast.error("Failed to post study group", { position: "top-right" }));
   };
+
+  useEffect(() => {
+    axios.get("http://localhost:5000/api/study-groups").then(({ data }) => setStudyGroups(data)).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 flex flex-col items-center p-8">
@@ -100,7 +74,7 @@ const StudyGroupPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {studyGroups.map((studyGroup) => (
             <div
-              key={studyGroup.id}
+              key={studyGroup._id}
               className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-indigo-500 transform hover:scale-105 transition"
             >
               <h4 className="text-xl font-semibold text-gray-800">{studyGroup.title}</h4>
@@ -114,6 +88,12 @@ const StudyGroupPage = () => {
                 className="mt-3 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition"
               >
                 🤝 Connect
+              </button>
+              <button
+                onClick={() => axios.delete(`http://localhost:5000/api/study-groups/${studyGroup._id}`).then(() => setStudyGroups(studyGroups.filter(s => s._id !== studyGroup._id)))}
+                className="mt-3 ml-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+              >
+                🗑 Delete
               </button>
             </div>
           ))}

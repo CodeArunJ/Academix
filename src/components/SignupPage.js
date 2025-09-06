@@ -1,130 +1,107 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
-    confirmPassword: "",
+    password: ""
   });
-
-  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
-  const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&*!])[A-Za-z\d@#$%^&*!]{8,16}$/;
-
-  const nameRegex = /^[a-zA-Z0-9_-]+$/;
+  const validateForm = () => {
+    // Simple validation
+    return (
+      formData.name.trim() !== "" &&
+      formData.email.trim() !== "" &&
+      formData.password.trim() !== ""
+    );
+  };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.currentTarget || e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const validateForm = () => {
-    let newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required.";
-    } else if (!nameRegex.test(formData.name)) {
-      newErrors.name =
-        "Name must use letters, numbers, underscores, or dashes, and avoid personal information.";
-    }
-
-    if (!formData.email.trim()) newErrors.email = "Email is required.";
-    if (!formData.password.trim()) {
-      newErrors.password = "Password is required.";
-    } else if (!passwordRegex.test(formData.password)) {
-      newErrors.password =
-        "Password must be 8-16 characters, include uppercase, lowercase, number & special character.";
-    }
-    if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = "Confirm Password is required.";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match.";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      alert("Signup successful! 🎉");
-      navigate("/dashboard"); 
+      try {
+        const payload = {
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          password: formData.password.trim(),
+          displayName: formData.name.trim(),
+        };
+        // Determine API hosts to try
+        const currentHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
+        const candidates = [
+          `http://${currentHost}:5000`,
+          "http://localhost:5000",
+          "http://127.0.0.1:5000",
+        ];
+        let data;
+        let lastError;
+        for (const base of candidates) {
+          try {
+            ({ data } = await axios.post(`${base}/api/signup`, payload, {
+              headers: { "Content-Type": "application/json" },
+              timeout: 8000,
+            }));
+            break;
+          } catch (errTry) {
+            lastError = errTry;
+          }
+        }
+        if (!data) throw lastError || new Error("Network Error");
+        localStorage.setItem("currentUser", JSON.stringify({ id: data.user.id, name: data.user.name, email: data.user.email }));
+        alert("Signup successful! 📌");
+        navigate("/dashboard");
+      } catch (err) {
+        const status = err?.response?.status;
+        const message = err?.response?.data?.error || (status === 409 ? "Email already registered" : (err?.message || "Something went wrong. Please try again."));
+        alert(message);
+      }
+    } else {
+      alert("Please fill in all fields.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white">
-      <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-xl w-full max-w-md backdrop-blur-md">
-        <h2 className="text-3xl font-extrabold text-center mb-6 text-blue-400">
-          Sign Up
-        </h2>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-gray-300 font-medium">Name</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
-              placeholder="Enter your name"
-            />
-            {errors.name && <p className="text-red-400 text-sm">{errors.name}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-300 font-medium">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
-              placeholder="Enter your email"
-            />
-            {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-300 font-medium">Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
-              placeholder="Enter your password"
-            />
-            {errors.password && <p className="text-red-400 text-sm">{errors.password}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-300 font-medium">Confirm Password</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
-              placeholder="Re-enter your password"
-            />
-            {errors.confirmPassword && (
-              <p className="text-red-400 text-sm">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-transform transform hover:scale-105"
-          >
-            Sign Up
-          </button>
-        </form>
-      </div>
+    <div className="signup-container">
+      <h2>Sign Up</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          name="name"
+          placeholder="Name"
+          value={formData.name}
+          onChange={handleChange}
+        />
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={formData.email}
+          onChange={handleChange}
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={handleChange}
+          onInput={handleChange}
+          autoComplete="new-password"
+          required
+        />
+        <button type="submit">Sign Up</button>
+      </form>
     </div>
   );
 };

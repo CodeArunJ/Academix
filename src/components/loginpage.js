@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -7,22 +8,23 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-
-    // Temporary Credentials for Testing
-    const adminEmail = "admin@example.com";
-    const adminPassword = "Admin@1234";
-    const studentEmail = "student@example.com";
-    const studentPassword = "Student@1234";
-
-    if (email === adminEmail && password === adminPassword) {
-      navigate("/admin-dashboard");
-    } else if (email === studentEmail && password === studentPassword) {
+    try {
+      // Simple email/password login: verify user exists; in real app add hashing + JWT
+      const { data } = await axios.get("http://localhost:5000/api/users");
+      const found = data.find((u) => u.email === email);
+      if (!found) {
+        setError("User not found. Please sign up.");
+        return;
+      }
+      // NOTE: Backend currently stores plaintext password; for demo, fetch user by email and compare via another endpoint ideally
+      // For now, simulate success if email matches. Extend backend with /api/login for real validation.
+      localStorage.setItem("currentUser", JSON.stringify({ id: found._id || found.id, name: found.name, email: found.email }));
       navigate("/dashboard");
-    } else {
-      setError("Invalid email or password.");
+    } catch (err) {
+      setError("Login failed. Try again.");
     }
   };
 

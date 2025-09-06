@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 
 const formatDate = (inputDate) => {
   const date = new Date(inputDate);
@@ -14,32 +15,7 @@ const formatDate = (inputDate) => {
 
 const EventManagement = () => {
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [events, setEvents] = useState([
-    {
-      id: 1,
-      title: "AI & ML Conference",
-      description: "Exploring the latest in artificial intelligence and machine learning.",
-      date: "22-04-2025",
-      time: "10:00 AM",
-      category: "Technology",
-      speakers: "Dr. Rajesh Kumar, Elon Musk",
-      location: "Bangalore, India",
-      audienceLevel: "Advanced",
-      registrationLink: "https://conference.com",
-    },
-    {
-      id: 2,
-      title: "Startup Pitch Day",
-      description: "Showcase your startup ideas and get funding!",
-      date: "30-04-2025",
-      time: "2:00 PM",
-      category: "Business",
-      speakers: "VC Panel",
-      location: "Online",
-      audienceLevel: "General",
-      registrationLink: "https://startupfunding.com",
-    },
-  ]);
+  const [events, setEvents] = useState([]);
 
   const [newEvent, setNewEvent] = useState({
     title: "",
@@ -64,22 +40,29 @@ const EventManagement = () => {
       return;
     }
 
-    setEvents([...events, { id: events.length + 1, ...newEvent, date: formatDate(newEvent.date) }]);
-    setNewEvent({
-      title: "",
-      description: "",
-      date: "",
-      time: "",
-      category: "",
-      speakers: "",
-      location: "",
-      audienceLevel: "General",
-      registrationLink: "",
-    });
-
-    setIsFormVisible(false);
-    toast.success("Event posted successfully! 🎉", { position: "top-right" });
+    axios.post("http://localhost:5000/api/events", { ...newEvent, date: formatDate(newEvent.date) })
+      .then(({ data }) => {
+        setEvents([data, ...events]);
+        setNewEvent({
+          title: "",
+          description: "",
+          date: "",
+          time: "",
+          category: "",
+          speakers: "",
+          location: "",
+          audienceLevel: "General",
+          registrationLink: "",
+        });
+        setIsFormVisible(false);
+        toast.success("Event posted successfully! 🎉", { position: "top-right" });
+      })
+      .catch(() => toast.error("Failed to post event", { position: "top-right" }));
   };
+
+  useEffect(() => {
+    axios.get("http://localhost:5000/api/events").then(({ data }) => setEvents(data)).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 flex flex-col items-center p-8">
@@ -100,7 +83,7 @@ const EventManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {events.map((event) => (
             <div
-              key={event.id}
+              key={event._id}
               className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-indigo-500 transform hover:scale-105 transition"
             >
               <h4 className="text-xl font-semibold text-gray-800">{event.title}</h4>
@@ -123,6 +106,12 @@ const EventManagement = () => {
                 className="mt-3 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
               >
                 🤝 Connect with Organizer
+              </button>
+              <button
+                onClick={() => axios.delete(`http://localhost:5000/api/events/${event._id}`).then(() => setEvents(events.filter(e => e._id !== event._id)))}
+                className="mt-3 ml-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+              >
+                🗑 Delete
               </button>
             </div>
           ))}

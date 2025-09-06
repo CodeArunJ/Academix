@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 
 const ProjectsHub = () => {
   const [formData, setFormData] = useState({
@@ -14,18 +15,7 @@ const ProjectsHub = () => {
   });
 
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      title: "AI-Based Chatbot",
-      description: "A chatbot that learns user preferences over time.",
-      technologies: "Python, TensorFlow, NLP",
-      startDate: "2024-03-10",
-      endDate: "2024-05-10",
-      level: "Advanced",
-      contactEmail: "owner1@example.com",
-    },
-  ]);
+  const [projects, setProjects] = useState([]);
 
   // Calculate total duration in days
   const calculateDuration = (startDate, endDate) => {
@@ -50,33 +40,39 @@ const ProjectsHub = () => {
       return;
     }
 
-    const newProject = {
-      id: projects.length + 1,
-      ...formData,
-    };
-
-    setProjects([...projects, newProject]);
-
-    toast.success("Project posted successfully! 🎉", { position: "top-right" });
-
-    setFormData({
-      title: "",
-      description: "",
-      technologies: "",
-      startDate: "",
-      endDate: "",
-      level: "",
-      contactEmail: "",
-    });
-
-    setIsFormVisible(false);
+    axios.post("http://localhost:5000/api/projects", formData)
+      .then(({ data }) => {
+        setProjects([data, ...projects]);
+        toast.success("Project posted successfully! 🎉", { position: "top-right" });
+        setFormData({
+          title: "",
+          description: "",
+          technologies: "",
+          startDate: "",
+          endDate: "",
+          level: "",
+          contactEmail: "",
+        });
+        setIsFormVisible(false);
+        // Re-fetch to reflect any server-side defaults/transformations
+        axios.get("http://localhost:5000/api/projects").then(({ data: list }) => setProjects(list)).catch(() => {});
+      })
+      .catch(() => toast.error("Failed to post project", { position: "top-right" }));
   };
 
   // Handle deleting a project
   const handleDelete = (id) => {
-    setProjects(projects.filter((project) => project.id !== id));
-    toast.info("Project deleted!", { position: "top-right" });
+    axios.delete(`http://localhost:5000/api/projects/${id}`)
+      .then(() => {
+        setProjects(projects.filter((project) => project._id !== id));
+        toast.info("Project deleted!", { position: "top-right" });
+      })
+      .catch(() => toast.error("Failed to delete", { position: "top-right" }));
   };
+
+  useEffect(() => {
+    axios.get("http://localhost:5000/api/projects").then(({ data }) => setProjects(data)).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col items-center p-8">
@@ -97,7 +93,7 @@ const ProjectsHub = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {projects.map((project) => (
             <div
-              key={project.id}
+              key={project._id}
               className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500 transform hover:scale-105 transition"
             >
               <h4 className="text-xl font-semibold text-gray-800">{project.title}</h4>
@@ -108,7 +104,7 @@ const ProjectsHub = () => {
               <p className="text-gray-700"><strong>End Date:</strong> {project.endDate}</p>
               <p className="text-gray-700 font-bold"><strong>Duration:</strong> {calculateDuration(project.startDate, project.endDate)}</p>
               <button
-                onClick={() => handleDelete(project.id)}
+                onClick={() => handleDelete(project._id)}
                 className="mt-3 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
               >
                 🗑️ Delete

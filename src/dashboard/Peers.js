@@ -84,8 +84,8 @@ const Peers = ({ currentUserId }) => {
   }, [currentUser, users]);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md flex-1">
-      <h3 className="text-lg font-bold mb-4 text-gray-800">Recommended Connections</h3>
+    <div className="bg-white p-4 rounded-lg shadow-md flex-1 overflow-y-auto">
+      <h3 className="text-lg font-bold mb-3 text-gray-800">Recommended Connections</h3>
       {loading ? (
         <p className="text-gray-500">Loading recommendations...</p>
       ) : recommendedPeers.length > 0 ? (

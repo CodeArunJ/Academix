@@ -1,56 +1,68 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 const QueriesWritten = () => {
   // State to store queries and comments
   const [queries, setQueries] = useState([]);
   const [newQuery, setNewQuery] = useState('');
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [comments, setComments] = useState({}); // Store comments per query
+  const [editingId, setEditingId] = useState(null);
+  const [commentInputs, setCommentInputs] = useState({});
+  const currentUser = (() => {
+    try { return JSON.parse(localStorage.getItem('currentUser')) } catch (_) { return null }
+  })();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await axios.get('http://localhost:5000/api/queries');
+        setQueries(data);
+      } catch (e) {}
+    };
+    load();
+  }, []);
 
   // Function to add or update a query
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (newQuery.trim() === '') return;
+    if (newQuery.trim() === '' || !currentUser?.id) return;
 
-    if (editingIndex !== null) {
-      // Update existing query
-      const updatedQueries = [...queries];
-      updatedQueries[editingIndex] = newQuery;
-      setQueries(updatedQueries);
-      setEditingIndex(null);
-    } else {
-      // Add a new query
-      setQueries([...queries, newQuery]);
-    }
-
-    setNewQuery('');
+    try {
+      if (editingId) {
+        const { data } = await axios.patch(`http://localhost:5000/api/queries/${editingId}`, { content: newQuery });
+        setQueries(queries.map(q => q._id === editingId ? data : q));
+        setEditingId(null);
+      } else {
+        const { data } = await axios.post('http://localhost:5000/api/queries', { authorId: currentUser.id, content: newQuery });
+        setQueries([data, ...queries]);
+      }
+      setNewQuery('');
+    } catch (_) {}
   };
 
   // Function to delete a query
-  const handleDelete = (index) => {
-    setQueries(queries.filter((_, i) => i !== index));
-    const updatedComments = { ...comments };
-    delete updatedComments[index];
-    setComments(updatedComments);
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/queries/${id}`);
+      setQueries(queries.filter(q => q._id !== id));
+    } catch (_) {}
   };
 
   // Function to set query for editing
-  const handleEdit = (index) => {
-    setNewQuery(queries[index]);
-    setEditingIndex(index);
+  const handleEdit = (q) => {
+    setNewQuery(q.content);
+    setEditingId(q._id);
   };
 
   // Function to add a comment to a query
-  const handleAddComment = (index, comment) => {
-    if (!comment.trim()) return;
-
-    const updatedComments = { ...comments };
-    if (!updatedComments[index]) {
-      updatedComments[index] = [];
-    }
-    updatedComments[index].push(comment);
-    setComments(updatedComments);
+  const handleAddComment = async (id) => {
+    const value = (commentInputs[id] || '').trim();
+    if (!value || !currentUser?.id) return;
+    try {
+      const { data } = await axios.post(`http://localhost:5000/api/queries/${id}/comments`, { authorId: currentUser.id, content: value });
+      setQueries(queries.map(q => q._id === id ? data : q));
+      setCommentInputs({ ...commentInputs, [id]: '' });
+    } catch (_) {}
   };
 
   return (
@@ -71,10 +83,10 @@ const QueriesWritten = () => {
           <button
             type="submit"
             className={`w-full px-5 py-3 font-semibold rounded-xl transition shadow-md ${
-              editingIndex !== null ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-600 hover:bg-blue-700'
+              editingId !== null ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-600 hover:bg-blue-700'
             } text-white`}
           >
-            {editingIndex !== null ? 'Update Query' : 'Post Query'}
+            {editingId !== null ? 'Update Query' : 'Post Query'}
           </button>
         </form>
 
@@ -91,15 +103,15 @@ const QueriesWritten = () => {
                   <div className="w-10 h-10 flex items-center justify-center bg-blue-500 text-white font-bold rounded-full">
                     {index + 1}
                   </div>
-                  <p className="text-gray-800 flex-1">{query}</p>
+                  <p className="text-gray-800 flex-1">{query.content}</p>
                   <button
-                    onClick={() => handleEdit(index)}
+                    onClick={() => handleEdit(query)}
                     className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition"
                   >
                     ✏️ Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(index)}
+                    onClick={() => handleDelete(query._id)}
                     className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
                   >
                     🗑 Delete
@@ -110,10 +122,10 @@ const QueriesWritten = () => {
                 <div className="mt-4">
                   <h3 className="text-gray-700 font-semibold">💬 Answers:</h3>
                   <div className="space-y-2">
-                    {comments[index]?.length > 0 ? (
-                      comments[index].map((comment, commentIndex) => (
-                        <p key={commentIndex} className="text-gray-600 bg-gray-100 p-2 rounded-md">
-                          {comment}
+                    {query.comments?.length > 0 ? (
+                      query.comments.map((c, ci) => (
+                        <p key={ci} className="text-gray-600 bg-gray-100 p-2 rounded-md">
+                          {c.content}
                         </p>
                       ))
                     ) : (
@@ -127,23 +139,12 @@ const QueriesWritten = () => {
                       type="text"
                       placeholder="Write an answer..."
                       className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddComment(index, e.target.value);
-                          e.target.value = ''; // Clear input after adding comment
-                        }
-                      }}
+                      value={commentInputs[query._id] || ''}
+                      onChange={(e) => setCommentInputs({ ...commentInputs, [query._id]: e.target.value })}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(query._id) }}
                     />
                     <button
-                      onClick={() => {
-                        const inputField = document.querySelector(
-                          `input[placeholder="Write an answer..."]`
-                        );
-                        if (inputField?.value.trim()) {
-                          handleAddComment(index, inputField.value);
-                          inputField.value = '';
-                        }
-                      }}
+                      onClick={() => handleAddComment(query._id)}
                       className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
                     >
                       ➕ Reply

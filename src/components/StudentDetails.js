@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { collection, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import axios from "axios";
 
 const StudentDetails = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
 
-  // Fetch students from Firestore
+  // Fetch students from MongoDB
   useEffect(() => {
     const fetchStudents = async () => {
-      const studentsCollection = await getDocs(collection(db, "users"));
-      setStudents(
-        studentsCollection.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-      );
+      try {
+        const { data } = await axios.get("http://localhost:5000/api/users");
+        setStudents(data.map((u) => ({
+          id: u._id || u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          restricted: u.restricted,
+        })));
+      } catch (err) {
+        console.error("Failed to load students", err);
+      }
     };
 
     fetchStudents();
@@ -27,8 +34,7 @@ const StudentDetails = () => {
     setStudents(updatedStudents);
 
     try {
-      const userRef = doc(db, "users", id);
-      await updateDoc(userRef, { restricted: !restricted });
+      await axios.patch(`http://localhost:5000/api/users/${id}`, { restricted: !restricted });
     } catch (error) {
       console.error("Error updating user restriction:", error);
     }
@@ -37,7 +43,7 @@ const StudentDetails = () => {
   // Delete a student
   const handleDeleteStudent = async (id) => {
     if (window.confirm("Are you sure you want to delete this student?")) {
-      await deleteDoc(doc(db, "users", id));
+      await axios.delete(`http://localhost:5000/api/users/${id}`);
       setStudents(students.filter((student) => student.id !== id));
     }
   };
