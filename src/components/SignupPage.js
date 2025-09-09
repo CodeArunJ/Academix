@@ -1,107 +1,112 @@
 
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const SignupPage = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: ""
-  });
   const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const validateForm = () => {
-    // Simple validation
-    return (
-      formData.name.trim() !== "" &&
-      formData.email.trim() !== "" &&
-      formData.password.trim() !== ""
-    );
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.currentTarget || e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      try {
-        const payload = {
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          password: formData.password.trim(),
-          displayName: formData.name.trim(),
-        };
-        // Determine API hosts to try
-        const currentHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
-        const candidates = [
-          `http://${currentHost}:5000`,
-          "http://localhost:5000",
-          "http://127.0.0.1:5000",
-        ];
-        let data;
-        let lastError;
-        for (const base of candidates) {
-          try {
-            ({ data } = await axios.post(`${base}/api/signup`, payload, {
-              headers: { "Content-Type": "application/json" },
-              timeout: 8000,
-            }));
-            break;
-          } catch (errTry) {
-            lastError = errTry;
-          }
+    setError("");
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    try {
+      const payload = {
+        name: name.trim(),
+        email: email.trim(),
+        password: password.trim(),
+        displayName: name.trim(),
+      };
+      const currentHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
+      const candidates = [
+        `http://${currentHost}:5000`,
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+      ];
+      let data;
+      let lastError;
+      for (const base of candidates) {
+        try {
+          ({ data } = await axios.post(`${base}/api/signup`, payload, {
+            headers: { "Content-Type": "application/json" },
+            timeout: 8000,
+          }));
+          break;
+        } catch (errTry) {
+          lastError = errTry;
         }
-        if (!data) throw lastError || new Error("Network Error");
-        localStorage.setItem("currentUser", JSON.stringify({ id: data.user.id, name: data.user.name, email: data.user.email }));
-        alert("Signup successful! 📌");
-        navigate("/dashboard");
-      } catch (err) {
-        const status = err?.response?.status;
-        const message = err?.response?.data?.error || (status === 409 ? "Email already registered" : (err?.message || "Something went wrong. Please try again."));
-        alert(message);
       }
-    } else {
-      alert("Please fill in all fields.");
+      if (!data) throw lastError || new Error("Network Error");
+      localStorage.setItem("currentUser", JSON.stringify({ id: data.user.id, name: data.user.name, email: data.user.email }));
+      alert("Signup successful! 📌");
+      navigate("/dashboard");
+    } catch (err) {
+      const status = err?.response?.status;
+      const message = err?.response?.data?.error || (status === 409 ? "Email already registered" : (err?.message || "Something went wrong. Please try again."));
+      setError(message);
     }
   };
 
   return (
-    <div className="signup-container">
-      <h2>Sign Up</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          onInput={handleChange}
-          autoComplete="new-password"
-          required
-        />
-        <button type="submit">Sign Up</button>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white">
+      <div className="bg-gray-900 p-8 rounded-2xl shadow-xl w-96 backdrop-blur-md">
+        <h2 className="text-3xl font-extrabold text-center text-blue-400">Sign Up</h2>
+        {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+
+        <form onSubmit={handleSignup} className="space-y-4 mt-4">
+          <div>
+            <label className="block text-gray-300 font-semibold">Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+              placeholder="Enter your name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-300 font-semibold">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+              placeholder="Enter your email"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-300 font-semibold">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+              placeholder="Enter your password"
+              autoComplete="new-password"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-transform transform hover:scale-105"
+          >
+            Sign Up
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

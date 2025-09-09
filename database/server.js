@@ -15,14 +15,11 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-// MongoDB Connection (use 127.0.0.1 to avoid IPv6/localhost issues)
-const mongoURI = "mongodb://127.0.0.1:27017/academixDB";
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ MongoDB Connected!"))
-.catch(err => console.error("❌ MongoDB Connection Error:", err));
+// MongoDB Connection (use localhost for consistency)
+const mongoURI = "mongodb://localhost:27017/academixDB";
+mongoose.connect(mongoURI)
+  .then(() => console.log("✅ MongoDB Connected!"))
+  .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
 // Cleanup: Drop stray 'projects' collection if it exists (we use 'project')
 mongoose.connection.once("open", async () => {
